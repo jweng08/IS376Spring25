@@ -52,5 +52,18 @@ async def get_string():
     return {"Resume List: ": resume_list}
 
 
-
 #API for resume list object
+@app.post("/optimized-resume")
+async def add_optimized_resume(optimized_resume: str = ""):
+    optimized_resume_list.append(optimized_resume)
+    return {"Optimized a resume: ": optimized_resume}
+
+@app.delete("/optimized-resume")
+async def del_optimized_resume(optimized_resume: str = ""):
+    if len(optimized_resume_list) > 0:
+        optimized_resume_list.pop(-1)
+    return {"Optimized resumes: ": optimized_resume_list}
+
+@app.get("/optimized-resume")
+async def get_optimized_resume():
+    return {"Optimized resumes: ": optimized_resume_list}
