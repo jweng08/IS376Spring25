@@ -1,9 +1,10 @@
 from fastapi import FastAPI, HTTPException
 import openai
+from openai import OpenAI
 
 app = FastAPI()
 
-openai.api_key = "example"
+api_key=" "
 
 job_postings_list = []
 
@@ -12,23 +13,9 @@ async def root():
     return {"message": "Hello, please enter a valid endpoint: /resume, /optimized-resume, or /job-posting"}
 
 @app.post("/job-posting")
-async def add_string(job_posting: str = ""):
+async def add_job_posting(job_posting: str = ""):
     job_postings_list.append(job_posting)
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": f"Suggest 2 similar job titles for this job posting: {job_posting}"}
-            ]
-        )
-        suggestions = response['choices'][0]['message']['content']
-        
-        return {
-            "Added Job Posting": job_posting,
-            "AI Suggestions": suggestions
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"Added Job Posting": job_posting}
 
 @app.delete("/job-posting")
 async def del_string(job_posting: str = ""):
@@ -39,3 +26,25 @@ async def del_string(job_posting: str = ""):
 @app.get("/job-posting")
 async def get_string():
     return {"Job Posting List": job_postings_list}
+
+
+@app.get("/job-suggestions")
+async def get_job_suggestions(index: int = 0):
+    if index < 0 or index >= len(job_postings_list):
+        raise HTTPException(status_code=404, detail="Job posting not found")
+    else:
+        try:
+            prompt = build_job_prompt(job_postings_list[index])
+            client = OpenAI(api_key=api_key)
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return {"suggestions": response.choices[0].message.content}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+def build_job_prompt(job_posting):
+    prompt = f"""Based on the job title "{job_posting}", suggest 10 similar job titles.
+    Only list the 10 job titles."""
+    return prompt
